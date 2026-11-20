@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>مختبر ١١ قلم</title>
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#061A40;color:#B9C6DE;font:400 15px/1.8 system-ui,sans-serif;text-align:center;padding:24px}a{color:#7FA8FF}</style>
+</head>
+<body>
+<p id="msg">جارٍ فتح الخدمة…</p>
+<script>
+(function(){
+  var k=sessionStorage.getItem("lab_k")||localStorage.getItem("lab_k");
+  var id=(new URLSearchParams(location.search).get("t")||(location.hash||"").slice(1)).replace(/[^a-z0-9-]/g,"");
+  var msg=document.getElementById("msg");
+  if(!k||!id){location.replace("/lab/");return}
+  if(!sessionStorage.getItem("lab_invite")&&localStorage.getItem("lab_invite"))sessionStorage.setItem("lab_invite",localStorage.getItem("lab_invite"));
+  var ub=function(s){return Uint8Array.from(atob(s),function(c){return c.charCodeAt(0)})};
+  var data;
+  fetch("/lab/data/"+id+".json",{cache:"no-store"}).then(function(r){if(!r.ok)throw 0;return r.json()})
+  .then(function(d){data=d;return crypto.subtle.importKey("raw",ub(k),"AES-GCM",false,["decrypt"])})
+  .then(function(key){return crypto.subtle.decrypt({name:"AES-GCM",iv:ub(data.iv)},key,ub(data.ct))})
+  .then(function(buf){if(!data.z)return new TextDecoder().decode(buf);return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream("gzip"))).text()})
+  .then(function(html){document.open();document.write(html);document.close()})
+  .catch(function(){msg.innerHTML='تعذّر فتح الخدمة. <a href="/lab/">ارجع إلى المختبر</a> وأعد الدخول بدعوتك.'});
+})();
+</script>
+</body>
+</html>
